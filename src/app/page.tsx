@@ -13,7 +13,7 @@ interface Message {
   id: string;
     role: 'user' | 'assistant';
       content: string;
-        timestamp: Date;h
+        timestamp: Date;
         }
 
         interface UploadedDoc {
