@@ -17,7 +17,7 @@ Rules:
 - Be concise but thorough
 - Use markdown formatting for better readability (headers, lists, bold, code blocks)
 - When quoting, use > blockquote syntax
-- Never make up information not present in the document`;
+- Never make up information not present in the document`;h
 
 export async function POST(req: NextRequest) {
     try {
@@ -46,11 +46,11 @@ export async function POST(req: NextRequest) {
 
           const genAI = new GoogleGenerativeAI(apiKey);
           const model = genAI.getGenerativeModel({
-                  model: 'gemini-2.5-flash-preview-04-17',
+                  model: 'gemini-2.0-flash',
                   systemInstruction: SYSTEM_PROMPT,
                 });
 
-          // Build conversation history for context
+          // Build conversation history for contexth
           const historyForGemini = history.map((h) => ({
                   role: h.role === 'assistant' ? 'model' : 'user',
                   parts: [{ text: h.content }],
