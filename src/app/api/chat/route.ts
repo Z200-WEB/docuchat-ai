@@ -13,7 +13,7 @@ const SYSTEM_PROMPT = `You are DocuChat AI, an expert document analysis assistan
 You answer questions based ONLY on the provided document content.
 Rules:
 - Base every answer strictly on the document text provided
-- If the answer is not in the document, say so clearly
+- If the answer is not in the document, say so clearlyh
 - Be concise but thorough
 - Use markdown formatting for better readability (headers, lists, bold, code blocks)
 - When quoting, use > blockquote syntax
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
 
           const genAI = new GoogleGenerativeAI(apiKey);
           const model = genAI.getGenerativeModel({
-                  model: 'gemini-2.0-flash',
+                          model: 'gemini-1.5-flash',
                   systemInstruction: SYSTEM_PROMPT,
                 });
 
