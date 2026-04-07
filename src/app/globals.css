@@ -1,0 +1,109 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --font-inter: 'Inter', system-ui, sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+}
+
+html,
+body {
+    max-width: 100vw;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+}
+
+body {
+    background: #030712;
+    color: #f9fafb;
+    font-family: var(--font-inter);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #111827;
+}
+::-webkit-scrollbar-thumb {
+    background: #374151;
+    border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #4b5563;
+}
+
+/* Prose styles for AI responses */
+.prose-chat {
+    @apply text-gray-200 leading-relaxed;
+}
+.prose-chat p {
+    @apply mb-3 last:mb-0;
+}
+.prose-chat ul {
+    @apply list-disc list-inside mb-3 space-y-1;
+}
+.prose-chat ol {
+    @apply list-decimal list-inside mb-3 space-y-1;
+}
+.prose-chat h1, .prose-chat h2, .prose-chat h3 {
+    @apply font-semibold text-white mb-2 mt-4 first:mt-0;
+}
+.prose-chat h1 { @apply text-xl; }
+.prose-chat h2 { @apply text-lg; }
+.prose-chat h3 { @apply text-base; }
+.prose-chat strong {
+    @apply font-semibold text-white;
+}
+.prose-chat em {
+    @apply italic text-gray-300;
+}
+.prose-chat code:not(pre code) {
+    @apply bg-gray-800 text-brand-300 px-1.5 py-0.5 rounded text-sm font-mono;
+}
+.prose-chat pre {
+    @apply bg-gray-900 rounded-lg p-4 mb-3 overflow-x-auto;
+}
+.prose-chat blockquote {
+    @apply border-l-4 border-brand-500 pl-4 italic text-gray-400 my-3;
+}
+.prose-chat a {
+    @apply text-brand-400 underline hover:text-brand-300 transition-colors;
+}
+
+/* Typing indicator */
+@keyframes blink {
+    0%, 80%, 100% { opacity: 0; }
+    40% { opacity: 1; }
+}
+.typing-dot:nth-child(1) { animation: blink 1.4s infinite 0s; }
+.typing-dot:nth-child(2) { animation: blink 1.4s infinite 0.2s; }
+.typing-dot:nth-child(3) { animation: blink 1.4s infinite 0.4s; }
+
+/* Gradient text */
+.gradient-text {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #818cf8 0%, #c084fc 50%, #f472b6 100%);
+}
+
+/* Glass card */
+.glass {
+    background: rgba(17, 24, 39, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Glow effect */
+.glow-brand {
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.15);
+}
