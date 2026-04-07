@@ -1,6 +1,6 @@
 # DocuChat AI
 
-**AI-powered PDF & document chat using RAG + Gemini 2.5 Flash**
+**AI-powered PDF & document chat using RAG + Gemini 2.0 Flash**
 
 Upload any PDF or text file and ask questions in natural language. DocuChat answers based strictly on the document content — no hallucinations.
 
@@ -20,7 +20,7 @@ Upload any PDF or text file and ask questions in natural language. DocuChat answ
             - |-------|-----------|
             - | Frontend | Next.js 14 (App Router) + TypeScript |
             - | Styling | Tailwind CSS |
-            - | AI | Google Gemini 2.5 Flash |
+            - | AI | Google Gemini 2.0 Flash |
             - | PDF Parsing | pdf-parse |
             - | Deployment | Vercel (free tier) |
            
