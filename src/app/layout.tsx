@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 export const metadata: Metadata = {
   title: 'DocuChat AI — Chat with any PDF',
     description:
-        'Upload PDFs and ask questions in natural language. Powered by Gemini 2.5 Flash.',
+            'Upload PDFs and ask questions in natural language. Powered by Gemini 1.5 Flash.',
           keywords: ['AI', 'PDF', 'RAG', 'Gemini', 'document chat', 'Next.js'],
             openGraph: {
                 title: 'DocuChat AI',
