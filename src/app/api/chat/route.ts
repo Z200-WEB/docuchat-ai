@@ -17,7 +17,7 @@ Rules:
 - Be concise but thorough
 - Use markdown formatting for better readability (headers, lists, bold, code blocks)
 - When quoting, use > blockquote syntax
-- Never make up information not present in the document`;h
+- Never make up information not present in the document`
 
 export async function POST(req: NextRequest) {
     try {
