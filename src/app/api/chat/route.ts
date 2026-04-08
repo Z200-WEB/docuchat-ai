@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                                            systemInstruction: {}
+                                            systemInstruction: {
                                         parts: [{ text: SYSTEM_PROMPT }],
                                 },
                                 contents,
