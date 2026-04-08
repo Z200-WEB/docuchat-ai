@@ -61,8 +61,8 @@ export async function POST(req: NextRequest) {
                         { role: 'user', parts: [{ text: prompt }] },
                 ];
 
-                // Use Google Generative AI REST API v1 directly (supports gemini-2.0-flash)
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                // Use Google Generative AI REST API v1 directly (supports gemini-2.5-flash)
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
                 const geminiResponse = await fetch(apiUrl, {
                         method: 'POST',
