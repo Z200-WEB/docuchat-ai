@@ -4,120 +4,154 @@ export const runtime = 'nodejs';
 export const maxDuration = 60;
 
 interface HistoryItem {
-        role: 'user' | 'assistant';
-        content: string;
-}
+  role: 'user' | 'assistant';
+    content: string;
+    }
 
-const SYSTEM_PROMPT = `You are DocuChat AI, an expert document analysis assistant.
-            You answer questions based ONLY on the provided document content.
-            Rules:
-            - Base every answer strictly on the document text provided
-            - If the answer is not in the document, say so clearly
-            - Be concise but thorough
-            - Use markdown formatting for better readability (headers, lists, bold, code blocks)
-            - When quoting, use > blockquote syntax
+    const SYSTEM_PROMPT = `You are DocuChat AI, an expert document analysis assistant.
+     You answer questions based ONLY on the provided document content.
+      Rules:
+       - Base every answer strictly on the document text provided
+        - If the answer is not in the document, say so clearly
+         - Be concise but thorough
+          - Use markdown formatting for better readability (headers, lists, bold, code blocks)
+           - When quoting, use > blockquote syntax
             - Never make up information not present in the document`;
 
-export async function POST(req: NextRequest) {
-        try {
-                const apiKey = process.env.GEMINI_API_KEY;
-                if (!apiKey) {
-                        return NextResponse.json(
-                                { error: 'Gemini API key not configured. Please set GEMINI_API_KEY in your environment.' },
-                                { status: 500 }
-                        );
-                }
+            // Multiple API keys for rotation when one hits quota/overload
+            function getApiKeys(): string[] {
+              const keys: string[] = [];
+                // Primary key from env
+                  if (process.env.GEMINI_API_KEY) keys.push(process.env.GEMINI_API_KEY);
+                    // Additional fallback keys
+                      if (process.env.GEMINI_API_KEY_2) keys.push(process.env.GEMINI_API_KEY_2);
+                        if (process.env.GEMINI_API_KEY_3) keys.push(process.env.GEMINI_API_KEY_3);
+                          if (process.env.GEMINI_API_KEY_4) keys.push(process.env.GEMINI_API_KEY_4);
+                            return keys;
+                            }
 
-                const body = await req.json();
-                const { question, documentText, documentName, history = [] } = body as {
-                        question: string;
-                        documentText: string;
-                        documentName: string;
-                        history: HistoryItem[];
-                };
+                            const RETRYABLE_STATUSES = [429, 500, 503];
 
-                if (!question?.trim()) {
-                        return NextResponse.json({ error: 'Question is required' }, { status: 400 });
-                }
-                if (!documentText?.trim()) {
-                        return NextResponse.json({ error: 'Document text is required' }, { status: 400 });
-                }
+                            async function callGemini(apiKey: string, body: object): Promise<Response> {
+                              const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+                                return fetch(apiUrl, {
+                                    method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify(body),
+                                              });
+                                              }
 
-                const prompt = `DOCUMENT NAME: ${documentName}
+                                              export async function POST(req: NextRequest) {
+                                                try {
+                                                    const keys = getApiKeys();
+                                                        if (keys.length === 0) {
+                                                              return NextResponse.json(
+                                                                      { error: 'Gemini API key not configured. Please set GEMINI_API_KEY in your environment.' },
+                                                                              { status: 500 }
+                                                                                    );
+                                                                                        }
 
-                                                                                                                          DOCUMENT CONTENT:
-                                                                                                                          ---
-                                                                                                                          ${documentText}
-                                                                                                                          ---
+                                                                                            const body = await req.json();
+                                                                                                const { question, documentText, documentName, history = [] } = body as {
+                                                                                                      question: string;
+                                                                                                            documentText: string;
+                                                                                                                  documentName: string;
+                                                                                                                        history: HistoryItem[];
+                                                                                                                            };
 
-                                                                                                                          USER QUESTION: ${question}`;
+                                                                                                                                if (!question?.trim()) {
+                                                                                                                                      return NextResponse.json({ error: 'Question is required' }, { status: 400 });
+                                                                                                                                          }
+                                                                                                                                              if (!documentText?.trim()) {
+                                                                                                                                                    return NextResponse.json({ error: 'Document text is required' }, { status: 400 });
+                                                                                                                                                        }
 
-                // Build conversation history for Gemini REST API format
-                const contents = [
-                        ...history.map((h) => ({
-                                role: h.role === 'assistant' ? 'model' : 'user',
-                                parts: [{ text: h.content }],
-                        })),
-                        { role: 'user', parts: [{ text: prompt }] },
-                ];
+                                                                                                                                                            const prompt = `DOCUMENT NAME: ${documentName}
 
-                // Use Google Generative AI REST API v1 directly (supports gemini-2.5-flash)
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+                                                                                                                                                             DOCUMENT CONTENT:
+                                                                                                                                                              ---
+                                                                                                                                                               ${documentText}
+                                                                                                                                                                ---
 
-                const geminiResponse = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                                            systemInstruction: {
-                                        parts: [{ text: SYSTEM_PROMPT }],
-                                },
-                                contents,
-                                generationConfig: {
-                                        temperature: 0.2,
-                                        topP: 0.95,
-                                        maxOutputTokens: 2048,
-                                },
-                        }),
-                });
+                                                                                                                                                                 USER QUESTION: ${question}`;
 
-                if (!geminiResponse.ok) {
-                        const errBody = await geminiResponse.json().catch(() => ({}));
-                        const errMsg = (errBody as { error?: { message?: string } })?.error?.message || geminiResponse.statusText;
-                        console.error('[chat] Gemini API error:', geminiResponse.status, errMsg);
+                                                                                                                                                                     const contents = [
+                                                                                                                                                                           ...history.map((h) => ({
+                                                                                                                                                                                   role: h.role === 'assistant' ? 'model' : 'user',
+                                                                                                                                                                                           parts: [{ text: h.content }],
+                                                                                                                                                                                                 })),
+                                                                                                                                                                                                       { role: 'user', parts: [{ text: prompt }] },
+                                                                                                                                                                                                           ];
 
-                        if (geminiResponse.status === 429) {
-                                return NextResponse.json(
-                                        { error: 'API quota exceeded. Please try again later.' },
-                                        { status: 429 }
-                                );
-                        }
-                        if (geminiResponse.status === 401 || geminiResponse.status === 403) {
-                                return NextResponse.json(
-                                        { error: 'Invalid Gemini API key. Please check your configuration.' },
-                                        { status: 401 }
-                                );
-                        }
-                        return NextResponse.json(
-                                { error: `Gemini API error: ${errMsg}` },
-                                { status: 500 }
-                        );
-                }
+                                                                                                                                                                                                               const requestBody = {
+                                                                                                                                                                                                                     systemInstruction: {
+                                                                                                                                                                                                                             parts: [{ text: SYSTEM_PROMPT }],
+                                                                                                                                                                                                                                   },
+                                                                                                                                                                                                                                         contents,
+                                                                                                                                                                                                                                               generationConfig: {
+                                                                                                                                                                                                                                                       temperature: 0.2,
+                                                                                                                                                                                                                                                               topP: 0.95,
+                                                                                                                                                                                                                                                                       maxOutputTokens: 2048,
+                                                                                                                                                                                                                                                                             },
+                                                                                                                                                                                                                                                                                 };
 
-                const data = await geminiResponse.json() as {
-                        candidates?: Array<{
-                                content?: { parts?: Array<{ text?: string }> };
-                        }>;
-                };
+                                                                                                                                                                                                                                                                                     let lastError = '';
+                                                                                                                                                                                                                                                                                         // Try each key in rotation
+                                                                                                                                                                                                                                                                                             for (let i = 0; i < keys.length; i++) {
+                                                                                                                                                                                                                                                                                                   const key = keys[i];
+                                                                                                                                                                                                                                                                                                         let geminiResponse: Response;
+                                                                                                                                                                                                                                                                                                               try {
+                                                                                                                                                                                                                                                                                                                       geminiResponse = await callGemini(key, requestBody);
+                                                                                                                                                                                                                                                                                                                             } catch (fetchErr) {
+                                                                                                                                                                                                                                                                                                                                     lastError = String(fetchErr);
+                                                                                                                                                                                                                                                                                                                                             continue;
+                                                                                                                                                                                                                                                                                                                                                   }
 
-                const answer = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+                                                                                                                                                                                                                                                                                                                                                         if (geminiResponse.ok) {
+                                                                                                                                                                                                                                                                                                                                                                 const data = await geminiResponse.json() as {
+                                                                                                                                                                                                                                                                                                                                                                           candidates?: Array<{
+                                                                                                                                                                                                                                                                                                                                                                                       content?: { parts?: Array<{ text?: string }> };
+                                                                                                                                                                                                                                                                                                                                                                                                 }>;
+                                                                                                                                                                                                                                                                                                                                                                                                         };
+                                                                                                                                                                                                                                                                                                                                                                                                                 const answer = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+                                                                                                                                                                                                                                                                                                                                                                                                                         return NextResponse.json({ answer });
+                                                                                                                                                                                                                                                                                                                                                                                                                               }
 
-                return NextResponse.json({ answer });
-        } catch (error: unknown) {
-                console.error('[chat] Error:', error);
+                                                                                                                                                                                                                                                                                                                                                                                                                                     // On retryable error, try next key
+                                                                                                                                                                                                                                                                                                                                                                                                                                           if (RETRYABLE_STATUSES.includes(geminiResponse.status)) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                   const errBody = await geminiResponse.json().catch(() => ({}));
+                                                                                                                                                                                                                                                                                                                                                                                                                                                           lastError = (errBody as { error?: { message?: string } })?.error?.message || geminiResponse.statusText;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                   console.warn(`[chat] Key ${i + 1}/${keys.length} failed (${geminiResponse.status}): ${lastError.substring(0, 100)}`);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                           continue;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 }
 
-                return NextResponse.json(
-                        { error: 'Failed to get AI response. Please try again.' },
-                        { status: 500 }
-                );
-        }
-}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       // Non-retryable errors (401, 403, 400): return immediately
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             if (geminiResponse.status === 401 || geminiResponse.status === 403) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     return NextResponse.json(
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               { error: 'Invalid Gemini API key. Please check your configuration.' },
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         { status: 401 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 );
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       }
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             const errBody = await geminiResponse.json().catch(() => ({}));
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   const errMsg = (errBody as { error?: { message?: string } })?.error?.message || geminiResponse.statusText;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         return NextResponse.json(
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 { error: `Gemini API error: ${errMsg}` },
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         { status: 500 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               );
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   }
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       // All keys exhausted
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           return NextResponse.json(
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 { error: `All API keys are currently unavailable. Please try again in a moment. (${lastError.substring(0, 100)})` },
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       { status: 503 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           );
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             } catch (error: unknown) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 console.error('[chat] Error:', error);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     return NextResponse.json(
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           { error: 'Failed to get AI response. Please try again.' },
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 { status: 500 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     );
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       }
