@@ -44,9 +44,8 @@ export async function POST(req: NextRequest) {
                                     return NextResponse.json({ error: 'Document text is required' }, { status: 400 });
                     }
 
-            const genAI = new GoogleGenerativeAI(apiKey);
-                    const model = genAI.getGenerativeModel({
-                    model: 'gemini-2.0-flash-lite',
+        const genAI = new GoogleGenerativeAI(apiKey, { apiVersion: 'v1' } as never);                    const model = genAI.getGenerativeModel({
+                    model: 'gemini-1.5-flash',
                     systemInstruction: SYSTEM_PROMPT,
                     });
 
